@@ -1,7 +1,81 @@
+:root {
+    --background-color-dark: #222222;
+    --background-color-light: #333333;
+    --background-color-red: #A71E21;
+
+    --emphasis-blue: #7EA3CC;
+    --emphasis-green: #70EE9C;
+
+    --text-standard: #ffffff;
+    --text-red: #D63A3D;
+
+
+    --font-emphasis: "Contrail One", serif, system-ui;
+    --font-standard: Helvetica, arial, sans-serif;
+
+    --motorsport-logo-height: 54px;
+}
+
+@font-face {
+    font-family: 'Contrail One';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url(https://img1.wsimg.com/gfonts/s/contrailone/v19/eLGbP-j_JA-kG0_Zo51noaftYkHs.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+* {
+    color: var(--text-standard);
+    font-family: var(--font-standard);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-emphasis);
+}
+
 html {
-    background-color: red;
+    background-color: var(--background-color-dark);
+}
+
+body {
+    margin: 0;
 }
 
 p {
-    color: blue;
+    color: var(--text-red);
+}
+
+button {
+    color: black;
+}
+
+/* Classes */
+
+.header {
+    display: flex;
+    background-color: var(--background-color-light);
+    width: 100%;
+    height: calc(var(--motorsport-logo-height) + 15px);
+
+    align-items: center;
+
+    margin: 0;
+}
+
+.page-title-h1 {
+    margin: 0px 5px;
+    font-size: calc(var(--motorsport-logo-height) - 10px);
+}
+
+.text-indicator-ready {
+    color: var(--emphasis-green);
+}
+
+.text-indicator-processing {
+    color: var(--emphasis-blue);
+}
+
+.text-indicator-bad {
+    color: var(--text-red);
 }

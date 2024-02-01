@@ -1,10 +1,30 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Beans</title>
+        <title>RPI Motorsports Student ID Scan</title>
         <link rel="stylesheet" href="static/style.css">
+        <script>
+            function change() {
+                var el = document.getElementsByClassName("text-indicator-ready")[0];
+
+                el.className = "text-indicator-processing";
+                setTimeout(() => {
+                    el.className = "text-indicator-bad";
+                    setTimeout(() => {
+                        el.className = "text-indicator-ready";
+                    }, 5000);
+                }, 5000);
+            }
+        </script>
     </head>
     <body>
-        <p>Hello World</p>
+        <div class="header">
+            <img src="//img1.wsimg.com/isteam/ip/7f19ba63-dd76-4cb9-a0b9-bd1246449b8b/logo.png/:/rs=h:54,cg:true,m/qt=q:95">
+            <h1 class="page-title-h1">Student ID Scanner</h1>
+        </div>
+        <div style="display: flex; align-content: center; display:flex; width: 100%;">
+            <h1 class="text-indicator-ready">Ready for RFID Scan!</h1>
+        </div>
+        <button onclick="change()">Change the thing</button>
     </body>
 </html>
