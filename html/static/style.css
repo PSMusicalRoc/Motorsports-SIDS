@@ -56,11 +56,15 @@ button {
     display: flex;
     background-color: var(--background-color-light);
     width: 100%;
-    height: calc(var(--motorsport-logo-height) + 15px);
+    height: calc(var(--motorsport-logo-height) + 8px);
 
     align-items: center;
 
     margin: 0;
+}
+
+img.rm-logo {
+    align-self: start;
 }
 
 .page-title-h1 {
