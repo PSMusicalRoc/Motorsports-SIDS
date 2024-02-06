@@ -28,7 +28,7 @@ async fn user_connected(ws: WebSocket, users: Users) {
     // Use a counter to assign a new unique ID for this user.
     let my_id = NEXT_USER_ID.fetch_add(1, Ordering::Relaxed);
 
-    warn!("New User: {}", my_id);
+    info!("User connected: {}", my_id);
 
     // Split the socket into a sender and receive of messages.
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
@@ -113,7 +113,7 @@ async fn user_disconnected(my_id: usize, users: &Users) {
 async fn main() {
     pretty_log::init();
     
-    info!("Hello world!");
+    info!("Launching RM Student ID Scan Server!");
 
     let users: Users = Users::default();
     let users = warp::any().map(move || users.clone());
