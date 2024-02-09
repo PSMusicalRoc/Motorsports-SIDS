@@ -3,3 +3,6 @@
 # for security reasons, we don't want to accidentally commit a database's
 # credentials
 settings.toml
+
+# Personal design doc
+design_doc.rnote
