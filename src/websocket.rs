@@ -1,6 +1,9 @@
+use super::data_types::*;
+
 use futures_util::StreamExt;
 
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -79,15 +82,30 @@ pub async fn user_message(_my_id: usize, msg: Message, users: &Users) {
         return;
     };
 
-    let new_msg: &str;
+    let mut new_msg = WebsocketOutgoingMessage {
+        msgtype: "null".to_string(),
+        message: "".to_string()
+    };
 
     if msg == "hello" {
-        new_msg = "hi there!";
+        new_msg.msgtype = "message".to_string();
+        new_msg.message = "hello world!".to_string();
     } else if msg == "pressed_a_button" {
-        new_msg = "you sure did, champ";
-    } else {
-        new_msg = "huh";
+        new_msg.msgtype = "message".to_string();
+        new_msg.message = "you sure did, champ".to_string();
+    } else if msg == "send_a_json" {
+        let row = PersonRow {
+            rcsid: "midora".to_string(),
+            firstname: "Amos".to_string(),
+            lastname: "Midor".to_string(),
+            rfid: "hochocho".to_string(),
+            is_good: true
+        };
+        new_msg.msgtype = "json".to_string();
+        new_msg.message = serde_json::to_string(&row).unwrap();
     }
+
+    let new_msg: String = serde_json::to_string(&new_msg).unwrap().to_string();
 
     // New message from this user, send it to everyone else (except same uid)...
     for (&_uid, tx) in users.read().await.iter() {

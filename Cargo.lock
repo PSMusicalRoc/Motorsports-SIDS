@@ -521,6 +521,7 @@ dependencies = [
  "log",
  "pretty_env_logger",
  "serde",
+ "serde_json",
  "text_io",
  "tokio",
  "tokio-stream",
