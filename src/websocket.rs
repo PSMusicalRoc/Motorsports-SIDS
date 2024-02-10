@@ -1,15 +1,16 @@
 use super::data_types::*;
 
-use futures_util::StreamExt;
-
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
 
-use futures_util::{SinkExt, TryFutureExt};
+use sqlx::{
+    mysql::*, ConnectOptions
+};
+
+use futures_util::{SinkExt, TryFutureExt, StreamExt};
 use tokio::sync::{mpsc, RwLock};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
@@ -24,7 +25,7 @@ pub static NEXT_USER_ID: AtomicUsize = AtomicUsize::new(1);
 /// - Value is a sender of `warp::ws::Message`
 pub type Users = Arc<RwLock<HashMap<usize, mpsc::UnboundedSender<Message>>>>;
 
-pub async fn user_connected(ws: WebSocket, users: Users) {
+pub async fn user_connected(ws: WebSocket, users: Users, settings: Settings) {
     // Use a counter to assign a new unique ID for this user.
     let my_id = NEXT_USER_ID.fetch_add(1, Ordering::Relaxed);
 
@@ -65,7 +66,7 @@ pub async fn user_connected(ws: WebSocket, users: Users) {
                 break;
             }
         };
-        user_message(my_id, msg, &users).await;
+        user_message(my_id, msg, &users, &settings).await;
     }
 
     // user_ws_rx stream will keep processing as long as the user stays
@@ -73,7 +74,7 @@ pub async fn user_connected(ws: WebSocket, users: Users) {
     user_disconnected(my_id, &users).await;
 }
 
-pub async fn user_message(_my_id: usize, msg: Message, users: &Users) {
+pub async fn user_message(_my_id: usize, msg: Message, users: &Users, settings: &Settings) {
     // Skip any non-Text messages...
     let msg = if let Ok(s) = msg.to_str() {
         println!("recieved a message: {}", s);
@@ -93,16 +94,36 @@ pub async fn user_message(_my_id: usize, msg: Message, users: &Users) {
     } else if msg == "pressed_a_button" {
         new_msg.msgtype = "message".to_string();
         new_msg.message = "you sure did, champ".to_string();
-    } else if msg == "send_a_json" {
-        let row = PersonRow {
-            rcsid: "midora".to_string(),
-            firstname: "Amos".to_string(),
-            lastname: "Midor".to_string(),
-            rfid: "hochocho".to_string(),
-            is_good: true
-        };
-        new_msg.msgtype = "json".to_string();
-        new_msg.message = serde_json::to_string(&row).unwrap();
+    } else if msg == "get_all_people" {
+        let opts = MySqlConnectOptions::new()
+            .host("localhost")
+            .username(&settings.login.user)
+            .password(&settings.login.pass)
+            .database(&settings.login.database);
+        let mut conn = opts.connect().await.unwrap();
+        let data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
+            format!("{} {} {}",
+                "select people.rcsid, people.firstname, people.lastname, people.rfid, in_shop.time_in",
+                "from people",
+                "inner join in_shop on in_shop.rfid=people.rfid").as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+
+        let mut realdata: Vec<JoinedPersonInShop> = Vec::new();
+
+        for obj in data {
+            realdata.push(JoinedPersonInShop {
+                rcsid: obj.rcsid,
+                firstname: obj.firstname,
+                lastname: obj.lastname,
+                timestamp: format!("{} {}",
+                    obj.time_in.date_naive(),
+                    obj.time_in.time()
+                )
+            })
+        }
+
+        new_msg.msgtype = "in_shop_add".to_string();
+        new_msg.message = serde_json::to_string(&realdata).unwrap();
     }
 
     let new_msg: String = serde_json::to_string(&new_msg).unwrap().to_string();

@@ -1,6 +1,7 @@
 :root {
     --background-color-dark: #222222;
     --background-color-light: #333333;
+    --background-color-accent: #999999;
     --background-color-red: #A71E21;
 
     --emphasis-blue: #7EA3CC;
@@ -14,6 +15,8 @@
     --font-standard: Helvetica, arial, sans-serif;
 
     --motorsport-logo-height: 54px;
+    --header-height: calc(var(--motorsport-logo-height) + 8px);
+    --page-title-font-size: calc(var(--motorsport-logo-height) - 10px);
 }
 
 @font-face {
@@ -52,11 +55,46 @@ button {
 
 /* Classes */
 
+#column-holder {
+    height: calc(100vh - var(--header-height));
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.column-title {
+    margin: 100px 0 0 0;
+    font-size: var(--page-title-font-size);
+}
+
+#currently-in-table {
+    width: 100%;
+    font-size: 20px;
+}
+
+th {
+    border-bottom: var(--background-color-accent) 1px solid;
+}
+
+td {
+    text-align: center;
+}
+
+.even-col {
+    display: flex;
+    flex-basis: 32%;
+    flex-direction: column;
+    align-items: center;
+
+    background-color: var(--background-color-dark);
+    height: 100%;
+}
+
 .header {
     display: flex;
     background-color: var(--background-color-light);
     width: 100%;
-    height: calc(var(--motorsport-logo-height) + 8px);
+    height: var(--header-height);
 
     align-items: center;
 
@@ -69,7 +107,7 @@ img.rm-logo {
 
 .page-title-h1 {
     margin: 0px 5px;
-    font-size: calc(var(--motorsport-logo-height) - 10px);
+    font-size: var(--page-title-font-size);
 }
 
 .text-indicator-ready {

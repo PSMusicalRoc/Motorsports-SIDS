@@ -24,6 +24,7 @@ fn print_help() {
         "exit".bright_blue(),
         "Closes the webserver"
     );
+    println!();
 }
 
 
@@ -34,8 +35,7 @@ async fn main() {
     let settings: Settings = toml::from_str(
         fs::read_to_string("settings.toml").unwrap().as_str()
     ).unwrap();
-
-    info!("Login: User = {}, Pass = {}, Database = {}", settings.login.user, settings.login.pass, settings.login.database);
+    let settings = warp::any().map(move || settings.clone());
     
     info!("Launching RM Student ID Scan Server!");
 
@@ -52,8 +52,9 @@ async fn main() {
     let websocket_route = warp::path("websocket")
         .and(warp::ws())
         .and(users)
-        .map(|socket: warp::ws::Ws, users| {
-            socket.on_upgrade(|websocket: warp::ws::WebSocket| user_connected(websocket, users))
+        .and(settings)
+        .map(|socket: warp::ws::Ws, users, settings| {
+            socket.on_upgrade(|websocket: warp::ws::WebSocket| user_connected(websocket, users, settings))
         });
 
     let routes = index

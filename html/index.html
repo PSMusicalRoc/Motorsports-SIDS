@@ -28,9 +28,23 @@
             <img class="rm-logo" src="//img1.wsimg.com/isteam/ip/7f19ba63-dd76-4cb9-a0b9-bd1246449b8b/logo.png/:/rs=h:54,cg:true,m/qt=q:95">
             <h1 class="page-title-h1">Student ID Scanner</h1>
         </div>
-        <div style="display: flex; align-content: center; display:flex; width: 100%;">
+        <!-- <div style="display: flex; align-content: center; display:flex; width: 100%;">
             <h1 class="text-indicator-ready">Ready for RFID Scan!</h1>
+        </div> -->
+        <div id="column-holder">
+            <div class="even-col">
+                <h1 class="column-title">Currently In Shop</h1>
+                <table id="currently-in-table">
+                    <tr>
+                        <th>Name</th>
+                        <th>ID</th>
+                        <th>Time Entered</th>
+                    </tr>
+                </table>
+            </div>
+            <div class="even-col"></div>
+            <div class="even-col"></div>
         </div>
-        <button onclick="press_da_button()">Change the thing</button>
+        
     </body>
 </html>
