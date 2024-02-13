@@ -2,6 +2,13 @@
 
 This repository contains the source code for the RPI Motorsports' Student ID Scanner (SIDS).
 
+### Hardware Info
+
+At RPI, the campus uses the following scanners
+- RFIDeas RDR-6081AKU
+- HID Global Proximity MAXIPROX
+Given that the RPI cards operate on an HID protocol, a scanner compatible with scanning HID cards is required
+
 ### Cloning the Code
 
 To clone the current master (stable) code, use the following:
