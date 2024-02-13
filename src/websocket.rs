@@ -44,7 +44,7 @@ pub async fn user_connected(ws: WebSocket, users: Users, settings: Settings) {
             user_ws_tx
                 .send(message)
                 .unwrap_or_else(|e| {
-                    eprintln!("websocket send error: {}", e);
+                    error!("Websocket failed to send: {}", e);
                 })
                 .await;
         }
@@ -62,7 +62,7 @@ pub async fn user_connected(ws: WebSocket, users: Users, settings: Settings) {
         let msg = match result {
             Ok(msg) => msg,
             Err(e) => {
-                eprintln!("websocket error(uid={}): {}", my_id, e);
+                error!("websocket error(uid={}): {}", my_id, e);
                 break;
             }
         };
@@ -77,7 +77,7 @@ pub async fn user_connected(ws: WebSocket, users: Users, settings: Settings) {
 pub async fn user_message(_my_id: usize, msg: Message, users: &Users, settings: &Settings) {
     // Skip any non-Text messages...
     let msg = if let Ok(s) = msg.to_str() {
-        println!("recieved a message: {}", s);
+        info!("Message Recieved: {}", s);
         s
     } else {
         return;
@@ -139,7 +139,7 @@ pub async fn user_message(_my_id: usize, msg: Message, users: &Users, settings: 
 }
 
 pub async fn user_disconnected(my_id: usize, users: &Users) {
-    eprintln!("good bye user: {}", my_id);
+    info!("User {} left.", my_id);
 
     // Stream closed up, so remove from the user list
     users.write().await.remove(&my_id);

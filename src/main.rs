@@ -35,7 +35,7 @@ async fn main() {
     let settings: Settings = toml::from_str(
         fs::read_to_string("settings.toml").unwrap().as_str()
     ).unwrap();
-    let settings = warp::any().map(move || settings.clone());
+    let settings_warp = warp::any().map(move || settings.clone());
     
     info!("Launching RM Student ID Scan Server!");
 
@@ -52,9 +52,9 @@ async fn main() {
     let websocket_route = warp::path("websocket")
         .and(warp::ws())
         .and(users)
-        .and(settings)
-        .map(|socket: warp::ws::Ws, users, settings| {
-            socket.on_upgrade(|websocket: warp::ws::WebSocket| user_connected(websocket, users, settings))
+        .and(settings_warp)
+        .map(|socket: warp::ws::Ws, users, settings_warp| {
+            socket.on_upgrade(|websocket: warp::ws::WebSocket| user_connected(websocket, users, settings_warp))
         });
 
     let routes = index
@@ -76,7 +76,8 @@ async fn main() {
                 break;
             },
             _ => {
-
+                println!("Incorrect command - type \"help\" to see all commands.");
+                println!();
             }
         }
     }
