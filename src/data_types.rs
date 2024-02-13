@@ -1,4 +1,18 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::{
+    mpsc,
+    RwLock
+};
+use warp::ws::Message;
+
 use serde::{Deserialize, Serialize};
+
+/// Our state of currently connected users.
+///
+/// - Key is their id
+/// - Value is a sender of `warp::ws::Message`
+pub type Users = Arc<RwLock<HashMap<usize, mpsc::UnboundedSender<Message>>>>;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Login {
@@ -10,6 +24,18 @@ pub struct Login {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings {
     pub login: Login
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Settings {
+            login: Login {
+                user: "".to_string(),
+                pass: "".to_string(),
+                database: "".to_string()
+            }
+        }
+    }
 }
 
 

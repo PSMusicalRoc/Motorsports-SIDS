@@ -1,17 +1,14 @@
 use super::data_types::*;
+use super::global::*;
 
-use std::collections::HashMap;
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc,
-};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use sqlx::{
     mysql::*, ConnectOptions
 };
 
 use futures_util::{SinkExt, TryFutureExt, StreamExt};
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use warp::ws::{Message, WebSocket};
@@ -19,13 +16,17 @@ use warp::ws::{Message, WebSocket};
 /// Our global unique user id counter.
 pub static NEXT_USER_ID: AtomicUsize = AtomicUsize::new(1);
 
-/// Our state of currently connected users.
-///
-/// - Key is their id
-/// - Value is a sender of `warp::ws::Message`
-pub type Users = Arc<RwLock<HashMap<usize, mpsc::UnboundedSender<Message>>>>;
+fn get_settings_data() -> (String, String, String) {
+    let lock = SETTINGS.lock().unwrap();
+    let user = lock.login.user.clone();
+    let pass = lock.login.pass.clone();
+    let database = lock.login.database.clone();
+    drop(lock);
 
-pub async fn user_connected(ws: WebSocket, users: Users, settings: Settings) {
+    (user, pass, database)
+}
+
+pub async fn user_connected(ws: WebSocket) {
     // Use a counter to assign a new unique ID for this user.
     let my_id = NEXT_USER_ID.fetch_add(1, Ordering::Relaxed);
 
@@ -51,7 +52,7 @@ pub async fn user_connected(ws: WebSocket, users: Users, settings: Settings) {
     });
 
     // Save the sender in our list of connected users.
-    users.write().await.insert(my_id, tx);
+    USERS.write().await.insert(my_id, tx);
 
     // Return a `Future` that is basically a state machine managing
     // this specific user's connection.
@@ -66,15 +67,15 @@ pub async fn user_connected(ws: WebSocket, users: Users, settings: Settings) {
                 break;
             }
         };
-        user_message(my_id, msg, &users, &settings).await;
+        user_message(my_id, msg).await;
     }
 
     // user_ws_rx stream will keep processing as long as the user stays
     // connected. Once they disconnect, then...
-    user_disconnected(my_id, &users).await;
+    user_disconnected(my_id).await;
 }
 
-pub async fn user_message(_my_id: usize, msg: Message, users: &Users, settings: &Settings) {
+pub async fn user_message(_my_id: usize, msg: Message) {
     // Skip any non-Text messages...
     let msg = if let Ok(s) = msg.to_str() {
         info!("Message Recieved: {}", s);
@@ -94,12 +95,18 @@ pub async fn user_message(_my_id: usize, msg: Message, users: &Users, settings: 
     } else if msg == "pressed_a_button" {
         new_msg.msgtype = "message".to_string();
         new_msg.message = "you sure did, champ".to_string();
+    } else if msg == "test_message" {
+        new_msg.msgtype = "in_shop_add".to_string();
+        new_msg.message = "[]".to_string(); 
     } else if msg == "get_all_people" {
+        
+        let (user, pass, database) = get_settings_data();
+
         let opts = MySqlConnectOptions::new()
             .host("localhost")
-            .username(&settings.login.user)
-            .password(&settings.login.pass)
-            .database(&settings.login.database);
+            .username(&user)
+            .password(&pass)
+            .database(&database);
         let mut conn = opts.connect().await.unwrap();
         let data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
             format!("{} {} {}",
@@ -129,7 +136,7 @@ pub async fn user_message(_my_id: usize, msg: Message, users: &Users, settings: 
     let new_msg: String = serde_json::to_string(&new_msg).unwrap().to_string();
 
     // New message from this user, send it to everyone else (except same uid)...
-    for (&_uid, tx) in users.read().await.iter() {
+    for (&_uid, tx) in USERS.read().await.iter() {
         if let Err(_disconnected) = tx.send(Message::text(new_msg.clone())) {
             // The tx is disconnected, our `user_disconnected` code
             // should be happening in another task, nothing more to
@@ -138,9 +145,9 @@ pub async fn user_message(_my_id: usize, msg: Message, users: &Users, settings: 
     }
 }
 
-pub async fn user_disconnected(my_id: usize, users: &Users) {
+pub async fn user_disconnected(my_id: usize) {
     info!("User {} left.", my_id);
 
     // Stream closed up, so remove from the user list
-    users.write().await.remove(&my_id);
+    USERS.write().await.remove(&my_id);
 }

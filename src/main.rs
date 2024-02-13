@@ -1,12 +1,15 @@
 mod data_types;
 mod websocket;
-use data_types::Settings;
+mod global;
+
+use global::*;
+
 use websocket::*;
 
 use colored::Colorize;
 use std::fs;
 use text_io::read;
-use warp::Filter;
+use warp::{filters::ws::Message, Filter};
 
 use pretty_env_logger as pretty_log;
 #[macro_use] extern crate log;
@@ -32,15 +35,18 @@ fn print_help() {
 async fn main() {
     pretty_log::init();
 
-    let settings: Settings = toml::from_str(
+    let mut lock = SETTINGS.lock().unwrap();
+    *lock = toml::from_str(
         fs::read_to_string("settings.toml").unwrap().as_str()
     ).unwrap();
-    let settings_warp = warp::any().map(move || settings.clone());
+    drop(lock);
+    
+    // let settings_warp = warp::any().map(move || settings.clone());
     
     info!("Launching RM Student ID Scan Server!");
 
-    let users: Users = Users::default();
-    let users = warp::any().map(move || users.clone());
+    // let users: Users = Users::default();
+    // let users = warp::any().map(move || users.clone());
 
     let index = warp::get()
         .and(warp::path!())
@@ -51,10 +57,9 @@ async fn main() {
 
     let websocket_route = warp::path("websocket")
         .and(warp::ws())
-        .and(users)
-        .and(settings_warp)
-        .map(|socket: warp::ws::Ws, users, settings_warp| {
-            socket.on_upgrade(|websocket: warp::ws::WebSocket| user_connected(websocket, users, settings_warp))
+        // .and(settings_warp)
+        .map(|socket: warp::ws::Ws| {
+            socket.on_upgrade(|websocket: warp::ws::WebSocket| user_connected(websocket))
         });
 
     let routes = index
@@ -74,6 +79,9 @@ async fn main() {
             "exit" => {
                 webserver.abort();
                 break;
+            },
+            "message" => {
+                user_message(0, Message::text("test_message")).await;
             },
             _ => {
                 println!("Incorrect command - type \"help\" to see all commands.");
