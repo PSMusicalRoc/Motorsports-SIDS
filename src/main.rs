@@ -20,6 +20,10 @@ fn print_help() {
     println!();
     println!("{}", "Commands".bold());
     println!("{}\t{}",
+        "message".bright_blue(),
+        "Sends a test message to all clients"
+    );
+    println!("{}\t{}",
         "help".bright_blue(),
         "Displays this help message"
     );
