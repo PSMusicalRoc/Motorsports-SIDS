@@ -89,16 +89,18 @@ pub async fn user_message(_my_id: usize, msg: Message) {
         message: "".to_string()
     };
 
-    if msg == "hello" {
+    let msg: Vec<&str> = msg.split(" ").collect();
+
+    if msg[0] == "hello" {
         new_msg.msgtype = "message".to_string();
         new_msg.message = "hello world!".to_string();
-    } else if msg == "pressed_a_button" {
+    } else if msg[0] == "pressed_a_button" {
         new_msg.msgtype = "message".to_string();
         new_msg.message = "you sure did, champ".to_string();
-    } else if msg == "test_message" {
+    } else if msg[0] == "test_message" {
         new_msg.msgtype = "in_shop_add".to_string();
         new_msg.message = "[]".to_string(); 
-    } else if msg == "get_all_people" {
+    } else if msg[0] == "get_all_people" {
         
         let (user, pass, database) = get_settings_data();
 
@@ -129,7 +131,83 @@ pub async fn user_message(_my_id: usize, msg: Message) {
             })
         }
 
-        new_msg.msgtype = "in_shop_add".to_string();
+        new_msg.msgtype = "in_shop_refresh".to_string();
+        new_msg.message = serde_json::to_string(&realdata).unwrap();
+    } else if msg[0] == "add_to_shop" {
+        let (user, pass, database) = get_settings_data();
+
+        let opts = MySqlConnectOptions::new()
+            .host("localhost")
+            .username(&user)
+            .password(&pass)
+            .database(&database);
+        let mut conn = opts.connect().await.unwrap();
+        let _data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
+            format!("INSERT INTO in_shop (rfid, time_in) VALUES (\"{}\", current_timestamp())",
+                msg[1]
+            ).as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+
+        let data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
+            format!("{} {} {}",
+                "select people.rcsid, people.firstname, people.lastname, people.rfid, in_shop.time_in",
+                "from people",
+                "inner join in_shop on in_shop.rfid=people.rfid").as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+
+        let mut realdata: Vec<JoinedPersonInShop> = Vec::new();
+
+        for obj in data {
+            realdata.push(JoinedPersonInShop {
+                rcsid: obj.rcsid,
+                firstname: obj.firstname,
+                lastname: obj.lastname,
+                timestamp: format!("{} {}",
+                    obj.time_in.date_naive(),
+                    obj.time_in.time()
+                )
+            })
+        }
+
+        new_msg.msgtype = "in_shop_refresh".to_string();
+        new_msg.message = serde_json::to_string(&realdata).unwrap();
+    } else if msg[0] == "remove_from_shop" {
+        let (user, pass, database) = get_settings_data();
+
+        let opts = MySqlConnectOptions::new()
+            .host("localhost")
+            .username(&user)
+            .password(&pass)
+            .database(&database);
+        let mut conn = opts.connect().await.unwrap();
+        let _data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
+            format!("DELETE FROM in_shop WHERE rfid=\"{}\"",
+                msg[1]
+            ).as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+
+        let data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
+            format!("{} {} {}",
+                "select people.rcsid, people.firstname, people.lastname, people.rfid, in_shop.time_in",
+                "from people",
+                "inner join in_shop on in_shop.rfid=people.rfid").as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+
+        let mut realdata: Vec<JoinedPersonInShop> = Vec::new();
+
+        for obj in data {
+            realdata.push(JoinedPersonInShop {
+                rcsid: obj.rcsid,
+                firstname: obj.firstname,
+                lastname: obj.lastname,
+                timestamp: format!("{} {}",
+                    obj.time_in.date_naive(),
+                    obj.time_in.time()
+                )
+            })
+        }
+
+        new_msg.msgtype = "in_shop_refresh".to_string();
         new_msg.message = serde_json::to_string(&realdata).unwrap();
     }
 

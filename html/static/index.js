@@ -13,7 +13,7 @@ websocket.onmessage = function(ev) {
             console.log("Null message");
         } else if (jsObj.msgtype == "message") {
             console.log("Server message: " + jsObj.message);
-        } else if (jsObj.msgtype == "in_shop_add") {
+        } else if (jsObj.msgtype == "in_shop_refresh") {
             console.log(jsObj);
             let people = JSON.parse(jsObj.message);
             createInShopTable(people);
@@ -21,6 +21,18 @@ websocket.onmessage = function(ev) {
     } catch (e) {
         console.log(e);
     }
+}
+
+function addperson() {
+    let id = document.getElementById("input-person").value;
+    websocket.send("add_to_shop " + id);
+    document.getElementById("input-person").value = "";
+}
+
+function removeperson() {
+    let id = document.getElementById("input-person").value;
+    websocket.send("remove_from_shop " + id);
+    document.getElementById("input-person").value = "";
 }
 
 function createInShopTable(people) {

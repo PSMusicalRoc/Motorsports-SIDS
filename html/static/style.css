@@ -53,6 +53,10 @@ button {
     color: black;
 }
 
+input {
+    color: black;
+}
+
 /* Classes */
 
 #column-holder {
