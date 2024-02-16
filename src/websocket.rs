@@ -142,8 +142,15 @@ pub async fn user_message(_my_id: usize, msg: Message) {
             .password(&pass)
             .database(&database);
         let mut conn = opts.connect().await.unwrap();
-        let _data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
+        let _ = sqlx::query_as::<_, JoinedPersonInShopSQL>(
             format!("INSERT INTO in_shop (rfid, time_in) VALUES (\"{}\", current_timestamp())",
+                msg[1]
+            ).as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+
+        let _ = sqlx::query(
+            format!("{} SELECT rfid, TRUE, time_in FROM in_shop WHERE rfid=\"{}\"",
+                "INSERT INTO timestamps (rfid, is_checking_in, time_stamp)",
                 msg[1]
             ).as_str()
         ).fetch_all(&mut conn).await.unwrap();
@@ -180,8 +187,15 @@ pub async fn user_message(_my_id: usize, msg: Message) {
             .password(&pass)
             .database(&database);
         let mut conn = opts.connect().await.unwrap();
-        let _data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
+        let _ = sqlx::query(
             format!("DELETE FROM in_shop WHERE rfid=\"{}\"",
+                msg[1]
+            ).as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+
+        let _ = sqlx::query(
+            format!("{} VALUES (\"{}\", FALSE, CURRENT_TIMESTAMP())",
+                "INSERT INTO timestamps (rfid, is_checking_in, time_stamp)",
                 msg[1]
             ).as_str()
         ).fetch_all(&mut conn).await.unwrap();
