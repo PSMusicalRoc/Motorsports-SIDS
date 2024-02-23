@@ -152,7 +152,6 @@ pub async fn user_message(_my_id: usize, msg: Message) {
         let mut realdata: Vec<JoinedTimestamp> = Vec::new();
 
         for obj in data {
-            println!("{}", obj.firstname);
             realdata.push(JoinedTimestamp {
                 rcsid: obj.rcsid,
                 firstname: obj.firstname,
@@ -167,7 +166,6 @@ pub async fn user_message(_my_id: usize, msg: Message) {
 
         new_msg.msgtype = "timestamps_refresh".to_string();
         new_msg.message = serde_json::to_string(&realdata).unwrap();
-        println!("{}", new_msg.message);
     }
     
     else if msg[0] == "add_to_shop" {
