@@ -56,8 +56,19 @@ async fn main() {
         .and(warp::path!())
         .and(warp::fs::file("html/index.html"));
 
+    let admin_page = warp::get()
+        .and(warp::path!("adminPage"))
+        .and(warp::fs::file("html/adminPage.html"));
+
+    let login_page = warp::get()
+        .and(warp::path!("login"))
+        .and(warp::fs::file("html/login.html"));
+
     let static_dir = warp::path("static")
         .and(warp::fs::dir("html/static"));
+
+    let error_page = warp::get()
+        .and(warp::fs::file("html/error.html"));
 
     let websocket_route = warp::path("websocket")
         .and(warp::ws())
@@ -68,7 +79,10 @@ async fn main() {
 
     let routes = index
         .or(static_dir)
-        .or(websocket_route);
+        .or(login_page)
+        .or(admin_page)
+        .or(websocket_route)
+        .or(error_page);
 
     let webserver = tokio::task::spawn(warp::serve(routes).run(([127, 0, 0, 1], 8080)));
 
