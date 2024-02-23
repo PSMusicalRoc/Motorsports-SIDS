@@ -72,3 +72,21 @@ pub struct JoinedPersonInShop {
     pub lastname: String,
     pub timestamp: String
 }
+
+#[derive(sqlx::FromRow)]
+pub struct JoinedTimestampSQL {
+    pub rcsid: String,
+    pub firstname: String,
+    pub lastname: String,
+    pub is_checking_in: bool,
+    pub time_stamp: sqlx::types::chrono::DateTime<sqlx::types::chrono::Local>
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JoinedTimestamp {
+    pub rcsid: String,
+    pub firstname: String,
+    pub lastname: String,
+    pub entering: bool,
+    pub timestamp: String
+}

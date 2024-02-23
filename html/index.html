@@ -9,19 +9,6 @@
         <title>RPI Motorsports Student ID Scan</title>
         <link rel="stylesheet" href="static/style.css">
         <script src="static/index.js"></script>
-        <script>
-            function change() {
-                var el = document.getElementsByClassName("text-indicator-ready")[0];
-
-                el.className = "text-indicator-processing";
-                setTimeout(() => {
-                    el.className = "text-indicator-bad";
-                    setTimeout(() => {
-                        el.className = "text-indicator-ready";
-                    }, 5000);
-                }, 5000);
-            }
-        </script>
     </head>
     <body>
         <div class="header">
@@ -37,7 +24,7 @@
                 <table id="currently-in-table">
                     <tr>
                         <th>Name</th>
-                        <th>ID</th>
+                        <th>RCSID</th>
                         <th>Time Entered</th>
                     </tr>
                 </table>
@@ -47,7 +34,17 @@
                 <button onclick="addperson()">Add Person To Shop</button>
                 <button onclick="removeperson()">Remove Person From Shop</button>
             </div>
-            <div class="even-col"></div>
+            <div class="even-col">
+                <h1 class="column-title">All Timestamps</h1>
+                <table id="all-timestamps-table">
+                    <tr>
+                        <th>Name</th>
+                        <th>RCSID</th>
+                        <th>Entering?</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </table>
+            </div>
         </div>
         
     </body>

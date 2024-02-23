@@ -76,6 +76,11 @@ input {
     font-size: 20px;
 }
 
+#all-timestamps-table {
+    width: 100%;
+    font-size: 20px;
+}
+
 th {
     border-bottom: var(--background-color-accent) 1px solid;
 }

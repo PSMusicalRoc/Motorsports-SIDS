@@ -100,7 +100,7 @@ pub async fn user_message(_my_id: usize, msg: Message) {
     } else if msg[0] == "test_message" {
         new_msg.msgtype = "in_shop_add".to_string();
         new_msg.message = "[]".to_string(); 
-    } else if msg[0] == "get_all_people" {
+    } else if msg[0] == "get_in_shop" {
         
         let (user, pass, database) = get_settings_data();
 
@@ -133,7 +133,44 @@ pub async fn user_message(_my_id: usize, msg: Message) {
 
         new_msg.msgtype = "in_shop_refresh".to_string();
         new_msg.message = serde_json::to_string(&realdata).unwrap();
-    } else if msg[0] == "add_to_shop" {
+    } else if msg[0] == "get_all_timestamps" {
+        let (user, pass, database) = get_settings_data();
+
+        let opts = MySqlConnectOptions::new()
+            .host("localhost")
+            .username(&user)
+            .password(&pass)
+            .database(&database);
+        let mut conn = opts.connect().await.unwrap();
+        let data = sqlx::query_as::<_, JoinedTimestampSQL>(
+            format!("{} {} {}",
+                "select people.rcsid, people.firstname, people.lastname, people.rfid, timestamps.is_checking_in, timestamps.time_stamp",
+                "from people",
+                "inner join timestamps on timestamps.rfid=people.rfid").as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+
+        let mut realdata: Vec<JoinedTimestamp> = Vec::new();
+
+        for obj in data {
+            println!("{}", obj.firstname);
+            realdata.push(JoinedTimestamp {
+                rcsid: obj.rcsid,
+                firstname: obj.firstname,
+                lastname: obj.lastname,
+                entering: obj.is_checking_in,
+                timestamp: format!("{} {}",
+                    obj.time_stamp.date_naive(),
+                    obj.time_stamp.time()
+                )
+            })
+        }
+
+        new_msg.msgtype = "timestamps_refresh".to_string();
+        new_msg.message = serde_json::to_string(&realdata).unwrap();
+        println!("{}", new_msg.message);
+    }
+    
+    else if msg[0] == "add_to_shop" {
         let (user, pass, database) = get_settings_data();
 
         let opts = MySqlConnectOptions::new()
@@ -178,7 +215,9 @@ pub async fn user_message(_my_id: usize, msg: Message) {
 
         new_msg.msgtype = "in_shop_refresh".to_string();
         new_msg.message = serde_json::to_string(&realdata).unwrap();
-    } else if msg[0] == "remove_from_shop" {
+    }
+    
+    else if msg[0] == "remove_from_shop" {
         let (user, pass, database) = get_settings_data();
 
         let opts = MySqlConnectOptions::new()
@@ -228,11 +267,14 @@ pub async fn user_message(_my_id: usize, msg: Message) {
     let new_msg: String = serde_json::to_string(&new_msg).unwrap().to_string();
 
     // New message from this user, send it to everyone else (except same uid)...
-    for (&_uid, tx) in USERS.read().await.iter() {
+    for (&uid, tx) in USERS.read().await.iter() {
+        info!("Sending message containing the following string to client {}: \"{}\"", uid, new_msg);
         if let Err(_disconnected) = tx.send(Message::text(new_msg.clone())) {
             // The tx is disconnected, our `user_disconnected` code
             // should be happening in another task, nothing more to
             // do here.
+            info!("Sent!");
+            continue;
         }
     }
 }
