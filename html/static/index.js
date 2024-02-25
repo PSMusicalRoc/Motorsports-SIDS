@@ -14,8 +14,6 @@ websocket.onmessage = function(ev) {
         
         if (jsObj.msgtype == "null") {
             console.log("Null message");
-        } else if (jsObj.msgtype == "message") {
-            console.log("Server message: " + jsObj.message);
         } else if (jsObj.msgtype == "in_shop_refresh") {
             /// @TODO REMOVE THIS
             console.log(jsObj);
@@ -26,6 +24,15 @@ websocket.onmessage = function(ev) {
             console.log(jsObj);
             let people = JSON.parse(jsObj.message);
             createAllTimeTable(people);
+        } else if (jsObj.msgtype == "unknown_person") {
+            let text = document.getElementById("status-text");
+            text.innerHTML = "You are not registered in the RM database yet. Please speak with the Safety Advisor currently on-site to fix this. This message will clear in 10 seconds.";
+            text.className = "status-error";
+            setTimeout(() => {
+                let text = document.getElementById("status-text");
+                text.innerHTML = "All Clear!";
+                text.className = "status-good";
+            }, 10000);
         }
     } catch (e) {
         console.log(e);

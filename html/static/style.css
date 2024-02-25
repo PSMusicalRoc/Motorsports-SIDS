@@ -119,14 +119,18 @@ img.rm-logo {
     font-size: var(--page-title-font-size);
 }
 
-.text-indicator-ready {
-    color: var(--emphasis-green);
+#status-header {
+    font-size: 40px;
 }
 
-.text-indicator-processing {
-    color: var(--emphasis-blue);
+#status-text {
+    font-size: 30px;
 }
 
-.text-indicator-bad {
+.status-error {
     color: var(--text-red);
+}
+
+.status-good {
+    color: var(--emphasis-green);
 }
