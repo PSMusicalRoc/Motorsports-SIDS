@@ -1,6 +1,6 @@
 pub mod structs;
 
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
 
 use structs::*;
 use rusb::{Device, DeviceList, DeviceDescriptor, DeviceHandle, GlobalContext};
@@ -194,5 +194,11 @@ impl ReaderData {
             self.id,
             self.adpu_status
         )
+    }
+}
+
+impl Display for ReaderData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
