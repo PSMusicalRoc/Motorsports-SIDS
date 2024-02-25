@@ -1,39 +1,48 @@
 mod data_types;
 mod websocket;
 mod global;
+mod omnikey_rs;
+
+use futures::executor::block_on;
+use lazy_static::lazy_static;
 
 use global::*;
-
+use omnikey_rs::structs::*;
 use websocket::*;
 
-use colored::Colorize;
-use std::fs;
-use text_io::read;
+use std::{
+    fs,
+    process::exit,
+    sync::Mutex
+};
 use warp::{filters::ws::Message, Filter};
 
 use pretty_env_logger as pretty_log;
 #[macro_use] extern crate log;
 
 
-fn print_help() {
-    println!("{}", "RM SIDS Webserver".bold().underline());
-    println!();
-    println!("{}", "Commands".bold());
-    println!("{}\t{}",
-        "message".bright_blue(),
-        "Sends a test message to all clients"
-    );
-    println!("{}\t{}",
-        "help".bright_blue(),
-        "Displays this help message"
-    );
-    println!("{}\t{}",
-        "exit".bright_blue(),
-        "Closes the webserver"
-    );
-    println!();
-}
+// fn print_help() {
+//     println!("{}", "RM SIDS Webserver".bold().underline());
+//     println!();
+//     println!("{}", "Commands".bold());
+//     println!("{}\t{}",
+//         "message".bright_blue(),
+//         "Sends a test message to all clients"
+//     );
+//     println!("{}\t{}",
+//         "help".bright_blue(),
+//         "Displays this help message"
+//     );
+//     println!("{}\t{}",
+//         "exit".bright_blue(),
+//         "Closes the webserver"
+//     );
+//     println!();
+// }
 
+lazy_static!{
+    pub static ref KEEP_READING_OMNIKEY: Mutex<bool> = Mutex::new(true);
+}
 
 #[tokio::main]
 async fn main() {
@@ -44,6 +53,22 @@ async fn main() {
         fs::read_to_string("settings.toml").unwrap().as_str()
     ).unwrap();
     drop(lock);
+
+    let omnikey = match Reader::new() {
+        Ok(r) => r,
+        Err(e) => {
+            error!("Could not read Omnikey RFID Reader: {}", e);
+            exit(-1);
+        }
+    };
+
+    match omnikey.set_legacy_ccid_mode() {
+        Ok(_) => {},
+        Err(e) => {
+            error!("Could not set Legacy Mode on RFID reader: {}", e);
+            exit(-1);
+        }
+    }
     
     // let settings_warp = warp::any().map(move || settings.clone());
     
@@ -84,30 +109,39 @@ async fn main() {
         .or(websocket_route)
         .or(error_page);
 
-    let webserver = tokio::task::spawn(warp::serve(routes).run(([127, 0, 0, 1], 8080)));
+    let _ = tokio::task::spawn(warp::serve(routes).run(([127, 0, 0, 1], 8080)));
+    // let omnikey_task = tokio::task::spawn(omnikey_do(omnikey));
 
     loop {
-        let line: String = read!("{}\n");
-        let words: Vec<&str> = line.split_ascii_whitespace().collect();
 
-        if words.len() < 1 { continue; }
-
-        match words[0] {
-            "help" => print_help(),
-            "exit" => {
-                webserver.abort();
+        let mut last_id: u64 = 0;
+        let mut still_reading = false;
+        loop {
+            let lock = KEEP_READING_OMNIKEY.lock().unwrap();
+            if !(*lock) {
                 break;
-            },
-            "message" => {
-                user_message(0, Message::text("test_message")).await;
-            },
-            _ => {
-                println!("Incorrect command - type \"help\" to see all commands.");
-                println!();
+            }
+            drop(lock);
+
+            let data = match omnikey.check_for_rfid_card() {
+                Ok(d) => d,
+                Err(e) => {
+                    error!("Error reading from Omnikey: {}", e);
+                    continue;
+                }
+            };
+
+            if data.status == 0 {
+                if data.valid && last_id != data.id && !still_reading {
+                    block_on(user_message(0, Message::text(format!("rfid_scan {}", data.id).as_str())));
+                    still_reading = true;
+                    last_id = data.id;
+                }
+            } else {
+                still_reading = false;
+                last_id = 0;
             }
         }
     }
-
-    info!("Shutting down webserver!");
 
 }

@@ -3,6 +3,7 @@ use super::global::*;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use sqlx::Row;
 use sqlx::{
     mysql::*, ConnectOptions
 };
@@ -25,6 +26,7 @@ fn get_settings_data() -> (String, String, String) {
 
     (user, pass, database)
 }
+
 
 pub async fn user_connected(ws: WebSocket) {
     // Use a counter to assign a new unique ID for this user.
@@ -262,6 +264,103 @@ pub async fn user_message(_my_id: usize, msg: Message) {
         new_msg.message = serde_json::to_string(&realdata).unwrap();
     }
 
+    else if msg[0] == "rfid_scan" {
+        let (user, pass, database) = get_settings_data();
+
+        let opts = MySqlConnectOptions::new()
+            .host("localhost")
+            .username(&user)
+            .password(&pass)
+            .database(&database);
+        let mut conn = opts.connect().await.unwrap();
+        let data = sqlx::query_as::<_, PersonRow>(
+            format!("SELECT * FROM people WHERE rfid=\"{}\"",
+                msg[1]
+            ).as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+
+        // Check how many people match the rfid tag
+        // in the database.
+
+        if data.len() == 0 {
+            new_msg.msgtype = "unknown_person".to_string();
+            new_msg.message = "".to_string();
+        } else if data.len() > 1 {
+            new_msg.msgtype = "too_many_people_with_id".to_string();
+            new_msg.message = "".to_string();
+        } else {
+            // There is only 1 person matching the rfid tag.
+            let response = sqlx::query(
+                format!("SELECT COUNT(*) as count FROM in_shop WHERE rfid=\"{}\"",
+                    msg[1]
+                ).as_str()
+            ).fetch_all(&mut conn).await.unwrap();
+
+            let mut pplcount: i32 = 0;
+            for row in response.iter() {
+                pplcount = row.get("count");
+            }
+
+            if pplcount == 0 {
+                // There are no people matching that rfid in the shop currently.
+                // As such, add them to the shop.
+
+                let _ = sqlx::query_as::<_, JoinedPersonInShopSQL>(
+                    format!("INSERT INTO in_shop (rfid, time_in) VALUES (\"{}\", current_timestamp())",
+                        msg[1]
+                    ).as_str()
+                ).fetch_all(&mut conn).await.unwrap();
+        
+                let _ = sqlx::query(
+                    format!("{} SELECT rfid, TRUE, time_in FROM in_shop WHERE rfid=\"{}\"",
+                        "INSERT INTO timestamps (rfid, is_checking_in, time_stamp)",
+                        msg[1]
+                    ).as_str()
+                ).fetch_all(&mut conn).await.unwrap();
+            } else {
+                // There is such a person matching that rfid in the shop currently.
+                // As such, remove them from the shop
+
+                let _ = sqlx::query(
+                    format!("DELETE FROM in_shop WHERE rfid=\"{}\"",
+                        msg[1]
+                    ).as_str()
+                ).fetch_all(&mut conn).await.unwrap();
+        
+                let _ = sqlx::query(
+                    format!("{} VALUES (\"{}\", FALSE, CURRENT_TIMESTAMP())",
+                        "INSERT INTO timestamps (rfid, is_checking_in, time_stamp)",
+                        msg[1]
+                    ).as_str()
+                ).fetch_all(&mut conn).await.unwrap();
+            }
+
+            let data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
+                format!("{} {} {}",
+                    "select people.rcsid, people.firstname, people.lastname, people.rfid, in_shop.time_in",
+                    "from people",
+                    "inner join in_shop on in_shop.rfid=people.rfid").as_str()
+            ).fetch_all(&mut conn).await.unwrap();
+
+            let mut realdata: Vec<JoinedPersonInShop> = Vec::new();
+
+            for obj in data {
+                realdata.push(JoinedPersonInShop {
+                    rcsid: obj.rcsid,
+                    firstname: obj.firstname,
+                    lastname: obj.lastname,
+                    timestamp: format!("{} {}",
+                        obj.time_in.date_naive(),
+                        obj.time_in.time()
+                    )
+                })
+            }
+            
+            new_msg.msgtype = "in_shop_refresh".to_string();
+            new_msg.message = serde_json::to_string(&realdata).unwrap();
+        }
+    }
+
     let new_msg: String = serde_json::to_string(&new_msg).unwrap().to_string();
 
     // New message from this user, send it to everyone else (except same uid)...
@@ -277,9 +376,11 @@ pub async fn user_message(_my_id: usize, msg: Message) {
     }
 }
 
+
 pub async fn user_disconnected(my_id: usize) {
     info!("User {} left.", my_id);
 
     // Stream closed up, so remove from the user list
+    
     USERS.write().await.remove(&my_id);
 }
