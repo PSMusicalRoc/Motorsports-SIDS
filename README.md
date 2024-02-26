@@ -7,7 +7,8 @@ This repository contains the source code for the RPI Motorsports' Student ID Sca
 At RPI, the campus uses the following scanners
 - RFIDeas RDR-6081AKU
 - HID Global Proximity MAXIPROX
-Given that the RPI cards operate on an HID protocol, a scanner compatible with scanning HID cards is required
+Given that the RPI cards operate on an HID protocol, a scanner compatible with scanning HID cards is required. For this
+application, we use an Omnikey 5025CL, and all code is based around allowing specifically it to work.
 
 ### Cloning the Code
 
