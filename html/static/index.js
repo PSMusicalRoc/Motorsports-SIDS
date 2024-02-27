@@ -1,5 +1,6 @@
 console.log(window.location.origin);
 const websocket = new WebSocket(window.location.origin.replace("http", "ws") + "/websocket");
+let globalTimeout = undefined;
 
 websocket.onopen = function() {
     this.send("get_in_shop");
@@ -8,47 +9,44 @@ websocket.onopen = function() {
 websocket.onmessage = function(ev) {
     try {
         let jsObj = JSON.parse(ev.data);
-
-        /// @TODO REMOVE THIS
-        console.log(jsObj);
         
         if (jsObj.msgtype == "null") {
             console.log("Null message");
         } else if (jsObj.msgtype == "in_shop_refresh") {
-            /// @TODO REMOVE THIS
-            console.log(jsObj);
             let people = JSON.parse(jsObj.message);
             createInShopTable(people);
         } else if (jsObj.msgtype == "timestamps_refresh") {
-            /// @TODO REMOVE THIS
-            console.log(jsObj);
             let people = JSON.parse(jsObj.message);
             createAllTimeTable(people);
-        } else if (jsObj.msgtype == "unknown_person") {
+        } else if (jsObj.msgtype == "parsing") {
+            clearTimeout(globalTimeout);
             let text = document.getElementById("status-text");
-            text.innerHTML = "You are not registered in the RM database yet. Please speak with the Safety Advisor currently on-site to fix this. This message will clear in 10 seconds.";
+            text.innerHTML = "Parsing Keycard...";
+            text.className = "status-parse";
+        } else if (jsObj.msgtype == "unknown_person") {
+            clearTimeout(globalTimeout);
+            let text = document.getElementById("status-text");
+            text.innerHTML = "You are not registered in the RM database yet. Please speak with the Safety Advisor currently on-site to fix this.";
             text.className = "status-error";
-            setTimeout(() => {
+            globalTimeout = setTimeout(() => {
                 let text = document.getElementById("status-text");
-                text.innerHTML = "All Clear!";
-                text.className = "status-good";
+                text.innerHTML = "Awaiting input!";
+                text.className = "status-parse";
             }, 10000);
+        } else if (jsObj.msgtype == "rfid_success") {
+            clearTimeout(globalTimeout);
+            let text = document.getElementById("status-text");
+            text.innerHTML = "Verified!";
+            text.className = "status-good";
+            globalTimeout = setTimeout(() => {
+                let text = document.getElementById("status-text");
+                text.innerHTML = "Awaiting input!";
+                text.className = "status-parse";
+            }, 3000);
         }
     } catch (e) {
         console.log(e);
     }
-}
-
-function addperson() {
-    let id = document.getElementById("input-person").value;
-    websocket.send("add_to_shop " + id);
-    document.getElementById("input-person").value = "";
-}
-
-function removeperson() {
-    let id = document.getElementById("input-person").value;
-    websocket.send("remove_from_shop " + id);
-    document.getElementById("input-person").value = "";
 }
 
 function createInShopTable(people) {
@@ -86,10 +84,6 @@ function createInShopTable(people) {
         newrow.appendChild(timestamp);
         
         tableroot.appendChild(newrow);
-
-        console.log(people[i].firstname + " " + people[i].lastname);
-        console.log(people[i].rcsid);
-        console.log(people[i].timestamp);
     }
 
     websocket.send("get_all_timestamps");
@@ -138,10 +132,5 @@ function createAllTimeTable(people) {
         newrow.appendChild(timestamp);
         
         tableroot.appendChild(newrow);
-
-        console.log(people[i].firstname + " " + people[i].lastname);
-        console.log(people[i].rcsid);
-        console.log(people[i].entering);
-        console.log(people[i].timestamp);
     }
 }

@@ -335,6 +335,12 @@ pub async fn user_message(_my_id: usize, msg: Message) {
                 ).fetch_all(&mut conn).await.unwrap();
             }
 
+            let keycard_msg = WebsocketOutgoingMessage {
+                msgtype: "rfid_success".to_string(),
+                message: "".to_string()
+            };
+            send_message(keycard_msg).await;
+
             let data = sqlx::query_as::<_, JoinedPersonInShopSQL>(
                 format!("{} {} {}",
                     "select people.rcsid, people.firstname, people.lastname, people.rfid, in_shop.time_in",
@@ -361,7 +367,12 @@ pub async fn user_message(_my_id: usize, msg: Message) {
         }
     }
 
-    let new_msg: String = serde_json::to_string(&new_msg).unwrap().to_string();
+    send_message(new_msg).await;
+}
+
+
+pub async fn send_message(message: WebsocketOutgoingMessage) {
+    let new_msg: String = serde_json::to_string(&message).unwrap().to_string();
 
     // New message from this user, send it to everyone else (except same uid)...
     for (&uid, tx) in USERS.read().await.iter() {
@@ -375,6 +386,8 @@ pub async fn user_message(_my_id: usize, msg: Message) {
         }
     }
 }
+
+
 
 
 pub async fn user_disconnected(my_id: usize) {

@@ -134,3 +134,7 @@ img.rm-logo {
 .status-good {
     color: var(--emphasis-green);
 }
+
+.status-parse {
+    color: var(--emphasis-blue);
+}

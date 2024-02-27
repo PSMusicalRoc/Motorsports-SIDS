@@ -6,6 +6,7 @@ mod omnikey_rs;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
 
+use data_types::WebsocketOutgoingMessage;
 use global::*;
 use omnikey_rs::structs::*;
 use websocket::*;
@@ -133,6 +134,10 @@ async fn main() {
 
             if data.status == 0 {
                 if data.valid && last_id != data.id && !still_reading {
+                    block_on(send_message(WebsocketOutgoingMessage {
+                        msgtype: "parsing".to_string(),
+                        message: "".to_string()
+                    }));
                     block_on(user_message(0, Message::text(format!("rfid_scan {}", data.id).as_str())));
                     still_reading = true;
                     last_id = data.id;
