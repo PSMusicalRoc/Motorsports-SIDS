@@ -1,7 +1,14 @@
+//! These functions pertain to the server's websocket
+//! communications. Since there are many different
+//! messages that go to and from the server, the different
+//! messages are handled in the `user_message` function.
+
 use crate::omnikey_rs;
 
-use super::data_types::*;
-use super::global::*;
+use crate::data_types::*;
+use crate::global::*;
+
+use log::{info, error};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -19,6 +26,23 @@ use warp::ws::{Message, WebSocket};
 /// Our global unique user id counter.
 pub static NEXT_USER_ID: AtomicUsize = AtomicUsize::new(1);
 
+
+/// A small, non-async function to get settings from the
+/// settings global variable
+/// 
+/// # Returns
+/// A 3-string tuple:
+/// - Tuple\[0] = username
+/// - Tuple\[1] = password
+/// - Tuple\[2] = database
+/// 
+/// # Examples
+/// ```rust
+/// async fn test() {
+///     let (user, pass, database) = get_settings_data();
+///     /* Create some connection here */
+/// }
+/// ```
 fn get_settings_data() -> (String, String, String) {
     let lock = SETTINGS.lock().unwrap();
     let user = lock.login.user.clone();
@@ -30,6 +54,12 @@ fn get_settings_data() -> (String, String, String) {
 }
 
 
+/// A function that is called when a user connects to
+/// our warp server. It adds them to the list of users,
+/// and starts their asyncronous websocket task.
+/// 
+/// # Parameters
+/// - `ws`: A warp::ws::Websocket instance
 pub async fn user_connected(ws: WebSocket) {
     // Use a counter to assign a new unique ID for this user.
     let my_id = NEXT_USER_ID.fetch_add(1, Ordering::Relaxed);
@@ -79,6 +109,13 @@ pub async fn user_connected(ws: WebSocket) {
     user_disconnected(my_id).await;
 }
 
+/// A function that fires when a user sends a
+/// websocket message and we handle it.
+/// 
+/// # Parameters
+/// - `_my_id`: A `usize` that represents the id of the
+/// user that sent the message.
+/// - `msg`: The actual message sent by the user
 pub async fn user_message(_my_id: usize, msg: Message) {
     // Skip any non-Text messages...
     let msg = if let Ok(s) = msg.to_str() {
@@ -433,6 +470,12 @@ pub async fn user_message(_my_id: usize, msg: Message) {
 }
 
 
+/// Sends a message to all clients currently connected
+/// to our warp server.
+/// 
+/// # Parameters
+/// - `message`: The message to be sent to all users
+/// connected currently.
 pub async fn send_message(message: WebsocketOutgoingMessage) {
     let new_msg: String = serde_json::to_string(&message).unwrap().to_string();
 
@@ -449,7 +492,8 @@ pub async fn send_message(message: WebsocketOutgoingMessage) {
     }
 }
 
-
+/// This function fires when a user disconnects from the
+/// warp server.
 pub async fn user_disconnected(my_id: usize) {
     info!("User {} left.", my_id);
 
