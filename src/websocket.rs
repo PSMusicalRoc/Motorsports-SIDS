@@ -1,3 +1,5 @@
+use crate::omnikey_rs;
+
 use super::data_types::*;
 use super::global::*;
 
@@ -367,6 +369,66 @@ pub async fn user_message(_my_id: usize, msg: Message) {
         }
     }
 
+    else if msg[0] == "new_person" {
+        let (user, pass, database) = get_settings_data();
+
+        let opts = MySqlConnectOptions::new()
+            .host("localhost")
+            .username(&user)
+            .password(&pass)
+            .database(&database);
+        let mut conn = opts.connect().await.unwrap();
+
+        
+        
+        let firstname = msg[1].to_string();
+        let lastname = msg[2].to_string();
+        let rcsid = msg[3].to_string();
+        let is_good = msg[4] == "true";
+
+        let omnikey_lock = crate::global::OMNIKEY.lock().await;
+        println!("waiting");
+        let mut data: omnikey_rs::structs::ReaderData;
+        loop {
+            data = match omnikey_lock.check_for_rfid_card() {
+                Ok(d) => d,
+                Err(_) => continue
+            };
+
+            if data.status == 0 && data.valid {
+                println!("Found ID# {}", data.id);
+                let ppl_data = sqlx::query_as::<_, PersonRow>(
+                    format!("SELECT * FROM people WHERE rfid=\"{}\"",
+                        data.id
+                    ).as_str()
+                ).fetch_all(&mut conn).await.unwrap();
+
+                println!("{}", ppl_data.len());
+
+                if ppl_data.len() == 0 {
+                    break;
+                }
+            }
+        }
+        
+        println!("beginning add query");
+        let _ = sqlx::query_as::<_, PersonRow>(
+            format!("{} {}",
+                "INSERT INTO people (rcsid, firstname, lastname, rfid, is_good)",
+                format!("VALUES (\"{}\", \"{}\", \"{}\", \"{}\", {})",
+                    rcsid,
+                    firstname,
+                    lastname,
+                    data.id,
+                    match is_good { true => "true", false => "false" }
+                )
+            ).as_str()
+        ).fetch_all(&mut conn).await.unwrap();
+        println!("ending add query");
+
+        println!("done");
+        drop(omnikey_lock);
+    }
     send_message(new_msg).await;
 }
 
@@ -386,8 +448,6 @@ pub async fn send_message(message: WebsocketOutgoingMessage) {
         }
     }
 }
-
-
 
 
 pub async fn user_disconnected(my_id: usize) {

@@ -4,17 +4,14 @@ mod global;
 mod omnikey_rs;
 
 use futures::executor::block_on;
-use lazy_static::lazy_static;
 
 use data_types::WebsocketOutgoingMessage;
 use global::*;
-use omnikey_rs::structs::*;
 use websocket::*;
 
 use std::{
     fs,
-    process::exit,
-    sync::Mutex
+    process::exit
 };
 use warp::{filters::ws::Message, Filter};
 
@@ -41,10 +38,6 @@ use pretty_env_logger as pretty_log;
 //     println!();
 // }
 
-lazy_static!{
-    pub static ref KEEP_READING_OMNIKEY: Mutex<bool> = Mutex::new(true);
-}
-
 #[tokio::main]
 async fn main() {
     pretty_log::init();
@@ -55,15 +48,7 @@ async fn main() {
     ).unwrap();
     drop(lock);
 
-    let omnikey = match Reader::new() {
-        Ok(r) => r,
-        Err(e) => {
-            error!("Could not read Omnikey RFID Reader: {}", e);
-            exit(-1);
-        }
-    };
-
-    match omnikey.set_legacy_ccid_mode() {
+    match block_on(OMNIKEY.lock()).set_legacy_ccid_mode() {
         Ok(_) => {},
         Err(e) => {
             error!("Could not set Legacy Mode on RFID reader: {}", e);
@@ -118,13 +103,12 @@ async fn main() {
         let mut last_id: u64 = 0;
         let mut still_reading = false;
         loop {
-            let lock = KEEP_READING_OMNIKEY.lock().unwrap();
-            if !(*lock) {
-                break;
-            }
-            drop(lock);
+            let lock = match OMNIKEY.try_lock() {
+                Ok(l) => l,
+                Err(_) => continue
+            };
 
-            let data = match omnikey.check_for_rfid_card() {
+            let data = match lock.check_for_rfid_card() {
                 Ok(d) => d,
                 Err(e) => {
                     error!("Error reading from Omnikey: {}", e);
@@ -146,6 +130,7 @@ async fn main() {
                 still_reading = false;
                 last_id = 0;
             }
+            drop(lock);
         }
     }
 

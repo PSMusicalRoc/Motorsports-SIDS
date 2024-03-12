@@ -7,22 +7,23 @@
         <link rel="icon" href="//img1.wsimg.com/isteam/ip/7f19ba63-dd76-4cb9-a0b9-bd1246449b8b/favicon/7b4ded71-afb1-43df-9b6d-a357dee5c77b.png/:/rs=w:48,h:48,m" sizes="48x48">
         <link rel="icon" href="//img1.wsimg.com/isteam/ip/7f19ba63-dd76-4cb9-a0b9-bd1246449b8b/favicon/7b4ded71-afb1-43df-9b6d-a357dee5c77b.png/:/rs=w:64,h:64,m" sizes="64x64">
         <title>RPI Motorsports Student ID Scan</title>
+        <meta charset="UTF-8">
         <link rel="stylesheet" href="static/style.css">
         <script src="static/cookieJar.js"></script>
+        <script src="static/adminPanel.js"></script>
     </head>
     <body>
         <div class="header">
             <img class="rm-logo" src="//img1.wsimg.com/isteam/ip/7f19ba63-dd76-4cb9-a0b9-bd1246449b8b/logo.png/:/rs=h:54,cg:true,m/qt=q:95">
             <h1 class="page-title-h1">Student ID Scanner</h1>
         </div>
-        <p id="cookietest"></p>
-        <script>
-            let p = document.getElementById("cookietest");
-            let usr = getCookie("rmusername");
-            let pass = getCookie("rmpassword");
-            if (usr != "" && pass != "") {
-                p.innerHTML = "Username: " + usr + ", Password: " + pass;
-            }
-        </script>
+        <form id="add-person-form" autocomplete="off" onsubmit="add_person()">
+            <input type="text" name="firstname" placeholder="First Name...">
+            <input type="text" name="lastname" placeholder="Last Name...">
+            <input type="text" name="rcsid" placeholder="RCSID...">
+            <label for="isGood">Is Safety Certified?</label>
+            <input type="checkbox" id="isGood" name="isGood">
+            <input type="submit" name="loginbutton" value="Add Member">
+        </form>
     </body>
 </html>

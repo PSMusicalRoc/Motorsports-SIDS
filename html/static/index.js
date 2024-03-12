@@ -1,4 +1,3 @@
-console.log(window.location.origin);
 const websocket = new WebSocket(window.location.origin.replace("http", "ws") + "/websocket");
 let globalTimeout = undefined;
 
