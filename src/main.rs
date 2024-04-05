@@ -1,13 +1,25 @@
+//! The main file of the application. This file
+//! starts by initializing logging and ensuring
+//! the USB Card Reader is attached and working
+//! properly.
+//! 
+//! Afterwards, we initialize the webserver on the
+//! local network at port 8080, then loop on reading
+//! the keycard until we get a response.
+//! 
+//! To see more, see the documentation for the
+//! functions in [websocket].
+
 mod data_types;
 mod websocket;
 mod global;
-mod omnikey_rs;
 
 use futures::executor::block_on;
 
 use data_types::WebsocketOutgoingMessage;
 use global::*;
 use websocket::*;
+use omnikey_rs;
 
 use std::{
     fs,
@@ -18,25 +30,6 @@ use warp::{filters::ws::Message, Filter};
 use pretty_env_logger as pretty_log;
 #[macro_use] extern crate log;
 
-
-// fn print_help() {
-//     println!("{}", "RM SIDS Webserver".bold().underline());
-//     println!();
-//     println!("{}", "Commands".bold());
-//     println!("{}\t{}",
-//         "message".bright_blue(),
-//         "Sends a test message to all clients"
-//     );
-//     println!("{}\t{}",
-//         "help".bright_blue(),
-//         "Displays this help message"
-//     );
-//     println!("{}\t{}",
-//         "exit".bright_blue(),
-//         "Closes the webserver"
-//     );
-//     println!();
-// }
 
 #[tokio::main]
 async fn main() {

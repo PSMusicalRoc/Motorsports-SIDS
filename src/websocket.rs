@@ -1,7 +1,14 @@
-//! These functions pertain to the server's websocket
-//! communications. Since there are many different
-//! messages that go to and from the server, the different
-//! messages are handled in the `user_message` function.
+//! Websocket communication functions.
+//! 
+//! These are the functions that truly do the
+//! heavy lifting of the application. They are
+//! the backbone of the webserver and are the
+//! main functions that are spawned off when
+//! a user connects to the server.
+//! 
+//! These methods are not used much throughout
+//! the rest of the code, but they are spawned
+//! at the very beginning via [user_connected()].
 
 use crate::omnikey_rs;
 
@@ -110,7 +117,9 @@ pub async fn user_connected(ws: WebSocket) {
 }
 
 /// A function that fires when a user sends a
-/// websocket message and we handle it.
+/// websocket message and we handle it. In here
+/// is the giant if statement tree that we use
+/// to handle every possible websocket request.
 /// 
 /// # Parameters
 /// - `_my_id`: A `usize` that represents the id of the
@@ -494,6 +503,10 @@ pub async fn send_message(message: WebsocketOutgoingMessage) {
 
 /// This function fires when a user disconnects from the
 /// warp server.
+/// 
+/// # Parameters
+/// - `my_id`: The `usize` corresponding with the user
+/// that just disconnected.
 pub async fn user_disconnected(my_id: usize) {
     info!("User {} left.", my_id);
 
