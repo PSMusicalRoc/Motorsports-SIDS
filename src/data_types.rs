@@ -1,3 +1,6 @@
+//! Data types used for getting SQL data
+//! from the server
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{
@@ -8,7 +11,7 @@ use warp::ws::Message;
 
 use serde::{Deserialize, Serialize};
 
-/// Our state of currently connected users.
+/// Our map of currently connected users.
 ///
 /// - Key is their id
 /// - Value is a sender of `warp::ws::Message`
