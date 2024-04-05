@@ -10,7 +10,7 @@
 //! as with the rest of this project, is free to use under
 //! the GPLv2 license.
 
-pub mod omnikey_rs;
+use omnikey_rs;
 
 pub mod data_types;
 

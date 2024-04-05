@@ -910,8 +910,8 @@ dependencies = [
  "futures-util",
  "lazy_static",
  "log",
+ "omnikey_rs",
  "pretty_env_logger",
- "rusb",
  "serde",
  "serde_json",
  "sqlx",
@@ -1025,6 +1025,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6a622008b6e321afc04970976f62ee297fdbaa6f95318ca343e3eebb9648441"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "omnikey_rs"
+version = "0.1.0"
+dependencies = [
+ "rusb",
 ]
 
 [[package]]
