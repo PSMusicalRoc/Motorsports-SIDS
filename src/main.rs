@@ -93,7 +93,6 @@ async fn main() {
 
     loop {
 
-        let mut last_id: u64 = 0;
         let mut still_reading = false;
         loop {
             let lock = match OMNIKEY.try_lock() {
@@ -109,19 +108,24 @@ async fn main() {
                 }
             };
 
+            let mut last_scanned = match LAST_SCANNED_ID.try_lock() {
+                Ok(l) => l,
+                Err(_) => continue
+            };
+
             if data.status == 0 {
-                if data.valid && last_id != data.id && !still_reading {
+                if data.valid && *last_scanned != data.id && !still_reading {
                     block_on(send_message(WebsocketOutgoingMessage {
                         msgtype: "parsing".to_string(),
                         message: "".to_string()
                     }));
                     block_on(user_message(0, Message::text(format!("rfid_scan {}", data.id).as_str())));
                     still_reading = true;
-                    last_id = data.id;
+                    *last_scanned = data.id;
                 }
             } else {
                 still_reading = false;
-                last_id = 0;
+                *last_scanned = 0;
             }
             drop(lock);
         }

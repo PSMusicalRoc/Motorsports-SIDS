@@ -433,6 +433,7 @@ pub async fn user_message(_my_id: usize, msg: Message) {
         let is_good = msg[4] == "true";
 
         let omnikey_lock = crate::global::OMNIKEY.lock().await;
+        let mut last_scanned = crate::global::LAST_SCANNED_ID.lock().await;
         println!("waiting");
         let mut data: omnikey_rs::structs::ReaderData;
         loop {
@@ -472,8 +473,12 @@ pub async fn user_message(_my_id: usize, msg: Message) {
         ).fetch_all(&mut conn).await.unwrap();
         println!("ending add query");
 
+        println!("Setting last scanned to this");
+        *last_scanned = data.id;
+
         println!("done");
         drop(omnikey_lock);
+        drop(last_scanned);
     }
     send_message(new_msg).await;
 }

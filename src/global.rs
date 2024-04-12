@@ -27,4 +27,5 @@ lazy_static!{
     pub static ref USERS: Users = Users::default();
     pub static ref SETTINGS: std::sync::Mutex<Settings> = std::sync::Mutex::new(Settings::default());
     pub static ref OMNIKEY: tokio::sync::Mutex<Reader> = tokio::sync::Mutex::new(Reader::new().unwrap());
+    pub static ref LAST_SCANNED_ID: tokio::sync::Mutex<u64> = tokio::sync::Mutex::new(0);
 }
