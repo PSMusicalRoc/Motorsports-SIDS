@@ -9,6 +9,7 @@
         <title>RPI Motorsports Student ID Scan</title>
         <meta charset="UTF-8">
         <link rel="stylesheet" href="static/style.css">
+        <link rel="stylesheet" href="static/adminPanel.css">
         <script src="static/cookieJar.js"></script>
         <script src="static/adminPanel.js"></script>
     </head>
@@ -18,11 +19,15 @@
             <h1 class="page-title-h1">Student ID Scanner</h1>
         </div>
         <form id="add-person-form" autocomplete="off" onsubmit="add_person()">
-            <input type="text" name="firstname" placeholder="First Name...">
-            <input type="text" name="lastname" placeholder="Last Name...">
-            <input type="text" name="rcsid" placeholder="RCSID...">
-            <label for="isGood">Is Safety Certified?</label>
-            <input type="checkbox" id="isGood" name="isGood">
+            <h3>Add Person to Shop Database</h3>
+            <input type="text" name="firstname" placeholder="First Name..."><br>
+            <input type="text" name="lastname" placeholder="Last Name..."><br>
+            <input type="text" name="rcsid" placeholder="RCSID..."><br>
+            <label class="check_container">Is Safety Certified?
+                <input type="checkbox" id="isGood" name="isGood">
+                <span class="checkmark"></span>
+            </label><br>
+            <!-- <input type="checkbox" id="isGood" name="isGood"> -->
             <input type="submit" name="loginbutton" value="Add Member">
         </form>
     </body>
